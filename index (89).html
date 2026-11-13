@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ducat Vault Risk & Quanta Simulator</title>
+<meta name="description" content="Simulate BTC-backed borrowing, liquidation risk, Quanta rewards and borrowing costs. Educational estimates only.">
+<meta property="og:title" content="Ducat Vault Risk & Quanta Simulator"><meta property="og:description" content="Simulate BTC collateral risk before you borrow."><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2716%27 fill=%27%23f7931a%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-size=%2718%27 text-anchor=%27middle%27 fill=%27%23000%27 font-family=%27sans-serif%27 font-weight=%27bold%27%3E%E2%82%BF%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 400px at 80% -10%,rgba(247,147,26,.12),transparent),#0b1220;color:#e6e9f0;font-family:system-ui,sans-serif;line-height:1.4}
+header{position:sticky;top:0;z-index:5;background:#0b1220ee;border-bottom:1px solid #ffffff1a;display:flex;gap:18px;padding:12px 16px;overflow-x:auto;align-items:center}
+header a{color:#cbd5e1;text-decoration:none;font-size:14px;white-space:nowrap}header a:hover{color:#f7931a}.logo{color:#f7931a;font-weight:800}
+main{max-width:1100px;margin:auto;padding:20px 14px;display:grid;gap:18px}
+section{background:#121a2bcc;border:1px solid #ffffff1a;border-radius:16px;padding:20px;scroll-margin-top:60px}
+h2{margin:0 0 14px;font-size:18px;color:#f5c26b}.g{display:grid;gap:12px}.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.g5{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.st{background:#ffffff0d;border-radius:12px;padding:12px}.st small{display:block;color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:.05em}.st b{font-size:19px;font-variant-numeric:tabular-nums}
+input,select{width:100%;background:#ffffff0d;border:1px solid #ffffff1a;color:#fff;border-radius:8px;padding:8px;font-size:15px}input[type=range]{accent-color:#f7931a;padding:0}
+label{display:block;font-size:14px;margin-bottom:14px}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.tabs button,.btn{border:1px solid #ffffff26;background:none;color:#cbd5e1;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:14px;text-decoration:none}
+.tabs button.on,.btn.gold{background:#f7931a;color:#000;border-color:#f7931a;font-weight:600}
+.note{background:#f7931a1a;border:1px solid #f7931a4d;color:#f5c26b;border-radius:12px;padding:10px 14px;font-size:13px}.mut{color:#94a3b8;font-size:12px}
+.meter{height:12px;background:#ffffff1a;border-radius:9px;overflow:hidden}.meter div{height:100%;transition:all .3s}
+.big{font-size:clamp(30px,7vw,52px);font-weight:800;color:#f7931a}.ch{position:relative;height:250px;margin-top:12px}
+#modal{display:none;position:fixed;inset:0;background:#000b;z-index:9;align-items:center;justify-content:center;padding:14px}#modal.open{display:flex}
+#mbox{background:#121a2b;border-radius:16px;padding:14px;width:100%;max-width:800px}canvas#card{width:100%;border-radius:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tip{position:relative;cursor:help;border-bottom:1px dotted #94a3b8;font-style:normal}
+.tip::after{content:attr(data-tip);position:absolute;left:0;bottom:135%;width:230px;background:#0b1220;border:1px solid #ffffff33;border-radius:8px;padding:8px;font-size:12px;font-weight:400;color:#e6e9f0;text-transform:none;letter-spacing:0;opacity:0;pointer-events:none;transition:.15s;z-index:8}
+.tip:hover::after,.tip:focus::after{opacity:1}
+.hero{padding:26px 4px 2px}.hero h1{margin:0;font-size:clamp(26px,5vw,40px)}.hero h1 span{color:#f7931a}.hero p{color:#94a3b8;max-width:660px;margin:8px 0 0}
+.err{color:#f87171;font-size:12px;min-height:4px;margin-bottom:6px}.empty{display:none;text-align:center;padding:14px;border:1px dashed #ffffff33;border-radius:12px;color:#94a3b8;margin-bottom:12px}
+button:disabled{opacity:.5;cursor:wait}footer{max-width:1100px;margin:0 auto;padding:6px 14px 40px;color:#64748b;font-size:12px}
+#wm{display:none;position:fixed;inset:0;background:#000b;z-index:9;align-items:center;justify-content:center;padding:14px}#wm.open{display:flex}#wb{background:#121a2b;border-radius:16px;padding:18px;width:100%;max-width:380px}#wb button{width:100%;margin-top:8px;text-align:left;padding:12px}
+</style></head><body>
+<header><span class="logo">₿ DUCAT</span><a href="#overview">Overview</a><a href="#simulator">Vault Simulator</a><a href="#quanta">Quanta Rewards</a><a href="#cost">Cost Comparison</a><a href="#open">Open on Ducat</a><a href="#about">About Ducat</a><button class="btn gold" id="wbtn" onclick="walletOpen()" style="margin-left:auto;white-space:nowrap">Connect wallet</button></header>
+<main>
+<div class="hero"><h1>Ducat Vault <span>Risk &amp; Quanta</span> Simulator</h1><p>Model a BTC-backed borrowing position, see exactly where liquidation sits, forecast Quanta accrual and compare borrowing costs. Everything runs in your browser.</p></div>
+<div class="note">Simulated estimates for planning. Final terms, fees and liquidations are set by the Ducat protocol.</div>
+
+<section id="overview"><div class="row" style="justify-content:space-between;margin:0 0 10px"><h2 style="margin:0">Overview</h2><span class="row" style="margin:0"><button class="btn" onclick="copyLink()" id="cl">🔗 Copy link</button><button class="btn" onclick="resetAll()">↺ Reset</button></span></div>
+<div class="g g5"><div class="st"><small>Simulated collateral</small><b id="o-btc"></b></div><div class="st"><small><i class="tip" tabindex="0" data-tip="UNIT is what you borrow against your BTC. Assumed 1 UNIT = 1 USD in this simulator.">Borrowed UNIT</i></small><b id="o-b"></b></div><div class="st"><small><i class="tip" tabindex="0" data-tip="Collateral value divided by debt. Higher means safer. Liquidation risk begins at 135%.">Collateral ratio</i></small><b id="o-r"></b></div><div class="st"><small>Daily Quanta</small><b id="o-q"></b></div><div class="st"><small>Vault health</small><b id="o-h"></b></div></div></section>
+
+<section id="simulator"><h2>Vault Simulator</h2><div class="err" id="err" role="alert"></div><div class="empty" id="empty">Enter a BTC amount and a BTC price above zero to simulate a vault.</div><div class="g g2"><div>
+<label>BTC collateral<input id="btc" type="number" min="0" step="0.01"><input id="btcR" type="range" min="0" max="20" step="0.01"></label>
+<label>BTC/USD price<input id="price" type="number" min="0"></label><div class="tabs" id="presets"></div><div class="tabs"><button id="live" onclick="livePrice()">⟳ Use live BTC price</button><span class="mut" id="lstat"></span></div>
+<label><i class="tip" tabindex="0" data-tip="Collateral value you lock for each unit of debt. 200% means $2 locked per $1 borrowed. Opening minimum is 160%.">Target collateral ratio</i>: <b id="rv" style="color:#f7931a"></b><input id="ratio" type="range" min="160" max="500" step="1"></label>
+<label>Fee treatment (verify with protocol)<select id="fee"><option value="deducted">Fee deducted from loan (debt = borrowed)</option><option value="added">Fee added to debt</option></select></label>
+<p class="mut">Assumption: Ducat's fee settlement is unconfirmed. Edit CONFIG at the top of the script. Assumes 1 UNIT = 1 USD.</p></div>
+<div><div class="g g2" style="gap:10px"><div class="st"><small>Collateral value</small><b id="s-val"></b></div><div class="st"><small>Max borrowable</small><b id="s-max"></b></div><div class="st"><small><i class="tip" tabindex="0" data-tip="A single 1% fee at opening. It is not recurring interest.">Origination fee (1%, one-time)</i></small><b id="s-fee"></b></div><div class="st"><small>Net received</small><b id="s-net"></b></div><div class="st"><small>Outstanding debt</small><b id="s-debt"></b></div><div class="st"><small>Remaining collateral value</small><b id="s-rem"></b></div></div>
+<div class="st" style="margin-top:12px"><div class="row" style="justify-content:space-between;margin:0 0 8px"><span>Vault health</span><b id="s-h"></b></div><div class="meter"><div id="mt"></div></div>
+<div class="g g2" style="gap:6px;margin-top:10px;font-size:14px"><span><i class="tip" tabindex="0" data-tip="The BTC price at which your ratio hits the 135% liquidation threshold: debt × 1.35 ÷ BTC collateral.">Liquidation price</i>: <b id="s-liq"></b></span><span>Current price: <b id="s-cur"></b></span><span>Distance: <b id="s-dist"></b></span><span><i class="tip" tabindex="0" data-tip="Collateral value above the amount needed to stay at the liquidation threshold.">Buffer</i>: <b id="s-buf"></b></span></div></div>
+<button class="btn gold" style="width:100%;margin-top:12px;padding:12px" onclick="openCard()">Generate Position Card</button></div></div></section>
+
+<section id="open"><h2>Take this position to Ducat</h2><p class="mut">Happy with the numbers? Open your vault on the Ducat platform. Your simulated position is copied so you can compare it with the real terms.</p>
+<div class="row"><a class="btn gold" id="go" target="_blank" rel="noopener noreferrer" onclick="cpy()">Open vault on Ducat →</a><button class="btn" onclick="cpy()">Copy position summary</button></div>
+<div class="st" style="margin-top:14px"><small>Connected wallet (read-only)</small><b id="wa" style="font-size:15px">Not connected</b><div class="mut" id="wbal"></div><div class="row"><button class="btn" id="useb" style="display:none" onclick="useBal()">Use wallet balance as collateral</button></div></div></section>
+
+<section id="stress"><h2>BTC Price Stress Test</h2><div class="tabs" id="stp"></div>
+<label>Custom shock: <b id="sv" style="color:#f7931a"></b><input id="stress" type="range" min="-60" max="60" step="1"></label>
+<div class="g g5"><div class="st"><small>Collateral value</small><b id="t-val"></b></div><div class="st"><small>Collateral ratio</small><b id="t-r"></b></div><div class="st"><small>Liquidation distance</small><b id="t-d"></b></div><div class="st"><small>Borrowing risk</small><b id="t-h"></b></div></div>
+<div class="ch"><canvas id="c1"></canvas></div></section>
+
+<section id="quanta"><h2>Quanta Rewards Forecaster</h2><div class="tabs" id="qt"></div><div class="big" id="qn"></div>
+<p class="mut" id="qe"></p><div class="ch" style="height:220px"><canvas id="c2"></canvas></div></section>
+
+<section id="cost"><h2>Ducat vs Wrapped BTC Cost (hypothetical)</h2><div class="tabs" id="at"></div><div class="tabs" id="dt"></div>
+<div class="g g5"><div class="st"><small>Ducat one-time fee</small><b id="k-f"></b></div><div class="st"><small>Ducat ongoing interest</small><b>0%</b></div><div class="st"><small>Wrapped interest (recurring)</small><b id="k-w"></b></div><div class="st"><small>Ducat total cost</small><b id="k-t"></b></div><div class="st"><small>Estimated savings</small><b id="k-s"></b></div></div>
+<div class="ch" style="height:200px"><canvas id="c3"></canvas></div>
+<p class="mut">The 1% fee is paid once. Wrapped-BTC interest recurs for as long as the loan is open. Rates are hypothetical, not real competitor offers. Same amount and duration are used for both.</p></section>
+
+<section id="about"><h2>Understanding Ducat Vaults</h2><div class="g g2" id="edu"></div>
+<p class="mut" style="margin-top:12px">This site never moves funds: wallet connection is read-only. Vaults are opened on Ducat itself. Check current terms in the official Ducat documentation.</p></section>
+</main>
+
+<div id="wm" onclick="if(event.target===this)this.classList.remove('open')"><div id="wb"><h2>Connect a Bitcoin wallet</h2><div id="wl"></div><p class="mut" style="margin-top:12px">Read-only: your address and balance are shown. Nothing is signed or sent.</p></div></div>
+<footer>Estimates only, not financial advice. Final terms and liquidations are determined by the Ducat protocol.</footer>
+<div id="modal" onclick="if(event.target===this)closeCard()"><div id="mbox"><canvas id="card" width="1200" height="630"></canvas>
+<div class="row"><button class="btn gold" onclick="dl()">Download PNG</button><button class="btn" id="cp" onclick="cpy()">Copy summary</button><a class="btn" id="xs" target="_blank" rel="noopener noreferrer">Share on X</a><button class="btn" style="margin-left:auto" onclick="closeCard()">Close</button></div></div></div>
+
+<script>
+/* ===== CONFIG: central protocol parameters. Verify with official Ducat docs. ===== */
+/* VERIFY: a Circle partner listing for Ducat states a 7% upfront minting fee and a 15% protocol take at liquidation. Confirm and update originationFee. Set appUrl to the exact Ducat app link. */
+const CONFIG={appUrl:"https://ducatprotocol.com",liqRatio:1.35,originationFee:0.01,ongoingInterest:0,quantaPerUnitPerDay:100,unitUsd:1,
+ feeTreatment:"deducted", /* ASSUMPTION: "deducted" (debt=borrowed) or "added" (debt=borrowed+fee) */
+ dangerBuf:1.10,cautionBuf:1.35};
+const DEF={btc:1,price:100000,ratio:200,stress:0,qd:30,apr:8,days:90};
+const S={...DEF,fee:CONFIG.feeTreatment};
+/* ===== Calculations (pure) ===== */
+const pos=x=>Number.isFinite(x)&&x>0?x:0;
+function health(r){return r<=CONFIG.liqRatio*CONFIG.dangerBuf?"DANGER":r<CONFIG.liqRatio*CONFIG.cautionBuf?"CAUTION":"SAFE"}
+function vault(btc,price,ratioPct,stressPct,fee){btc=pos(btc);price=pos(price);const tr=Math.max(ratioPct/100||0,CONFIG.liqRatio);
+ const val=btc*price,sp=Math.max(price*(1+(stressPct||0)/100),0),sv=btc*sp,borrowed=val/tr/CONFIG.unitUsd,f=borrowed*CONFIG.originationFee;
+ const net=fee==="deducted"?borrowed-f:borrowed,debt=(fee==="deducted"?borrowed:borrowed+f)*CONFIG.unitUsd;
+ const ratio=debt>0?sv/debt:0,liq=btc>0?debt*CONFIG.liqRatio/btc:0;
+ return{val,sv,borrowed,fee:f,net,debt,ratio,liq,sp,dist:sp>0&&liq>0?(sp-liq)/sp*100:0,buf:sv-debt*CONFIG.liqRatio,h:debt>0?health(ratio):"SAFE",dq:borrowed*CONFIG.quantaPerUnitPerDay}}
+const quanta=(b,d)=>pos(b)*CONFIG.quantaPerUnitPerDay*d;
+function cost(b,apr,d){const f=pos(b)*CONFIG.originationFee,i=pos(b)*CONFIG.ongoingInterest*d/365,t=f+i,w=pos(b)*apr/100*d/365;return{f,t,w,sav:w-t}}
+/* ===== UI ===== */
+const $=id=>document.getElementById(id),set=(id,v)=>$(id).textContent=v;
+const fmt=(n,d=0)=>Number.isFinite(n)?n.toLocaleString("en-US",{maximumFractionDigits:d,minimumFractionDigits:d}):"0",usd=n=>"$"+fmt(n);
+const HC={SAFE:"#34d399",CAUTION:"#fbbf24",DANGER:"#f87171"};
+function tabs(id,items,key,label){const el=$(id);el.innerHTML="";items.forEach(v=>{const b=document.createElement("button");b.textContent=label(v);b.className=S[key]===v?"on":"";b.onclick=()=>{S[key]=v;if(key==="price"||key==="stress")sync();update()};el.appendChild(b)})}
+function sync(){$("btc").value=S.btc;$("btcR").value=Math.min(S.btc,20);$("price").value=S.price;$("ratio").value=S.ratio;$("stress").value=S.stress;$("fee").value=S.fee}
+const num=s=>{const v=parseFloat(s);return Number.isFinite(v)&&v>0?v:0};
+$("btc").oninput=e=>{S.btc=num(e.target.value);$("btcR").value=Math.min(S.btc,20);update()};
+$("btcR").oninput=e=>{S.btc=num(e.target.value);$("btc").value=S.btc;update()};
+$("price").oninput=e=>{S.price=num(e.target.value);update()};
+$("ratio").oninput=e=>{S.ratio=+e.target.value;update()};
+$("stress").oninput=e=>{S.stress=+e.target.value;update()};
+$("fee").onchange=e=>{S.fee=e.target.value;update()};
+function resetAll(){Object.assign(S,DEF,{fee:CONFIG.feeTreatment});sync();update()}
+const CH=window.Chart||class{constructor(){this.data={}}update(){}};
+const mk=(id,type,opt)=>new CH($(id),{type,data:{labels:[],datasets:[]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},...opt}});
+const ax=(x,y)=>({scales:{x:{title:{display:true,text:x,color:"#94a3b8"},ticks:{color:"#94a3b8"},grid:{color:"#ffffff12"}},y:{title:{display:true,text:y,color:"#94a3b8"},ticks:{color:"#94a3b8"},grid:{color:"#ffffff12"}}}});
+const c1=mk("c1","line",ax("BTC price change (%)","Collateral ratio (%)")),c2=mk("c2","line",ax("Days","Quanta")),c3=mk("c3","bar",ax("Scenario","Total cost (USD)"));
+let R;
+function update(){save();
+ const r=R=vault(S.btc,S.price,S.ratio,S.stress,S.fee),col=HC[r.h];
+ set("o-btc",fmt(S.btc,4)+" BTC");set("o-b",fmt(r.borrowed,2));set("o-r",fmt(r.ratio*100,1)+"%");set("o-q",fmt(r.dq));set("o-h",r.h);$("o-h").style.color=col;
+ $("empty").style.display=(S.btc>0&&S.price>0)?"none":"block";set("rv",S.ratio+"%");set("sv",S.stress+"%");
+ set("s-val",usd(r.val));set("s-max",fmt(r.borrowed,2)+" UNIT");set("s-fee",fmt(r.fee,2)+" UNIT");set("s-net",fmt(r.net,2)+" UNIT");set("s-debt",fmt(r.debt,2)+" UNIT");set("s-rem",usd(r.sv));
+ set("s-h",r.h);$("s-h").style.color=col;$("mt").style.width=Math.min(100,Math.max(3,(r.ratio-1)/1.5*100))+"%";$("mt").style.background=col;
+ set("s-liq",usd(r.liq));set("s-cur",usd(r.sp));set("s-dist",fmt(r.dist,1)+"%");set("s-buf",usd(r.buf));
+ set("t-val",usd(r.sv));set("t-r",fmt(r.ratio*100,1)+"%");set("t-d",fmt(r.dist,1)+"%");set("t-h",r.h);$("t-h").style.color=col;$("t-r").style.color=col;
+ tabs("presets",[60000,80000,100000,120000],"price",usd);tabs("stp",[20,10,0,-10,-20,-30,-40],"stress",v=>v===0?"Current":(v>0?"+":"")+v+"%");
+ tabs("qt",[1,30,90],"qd",v=>v===1?"Daily":v+"-day");tabs("at",[6,8,10],"apr",v=>v+"% APR");tabs("dt",[30,90,180,365],"days",v=>v+" days");
+ const sl=[];for(let p=-60;p<=60;p+=3)sl.push({p,r:vault(S.btc,S.price,S.ratio,p,S.fee).ratio*100});
+ c1.data={labels:sl.map(x=>x.p),datasets:[{data:sl.map(x=>+x.r.toFixed(1)),borderColor:"#f7931a",pointRadius:0,tension:.2},{data:sl.map(()=>CONFIG.liqRatio*100),borderColor:"#f87171",borderDash:[6,4],pointRadius:0}]};c1.update();
+ set("qn",fmt(quanta(r.borrowed,S.qd))+" Quanta");
+ set("qe",`${fmt(r.borrowed,2)} UNIT × ${CONFIG.quantaPerUnitPerDay} Quanta/UNIT/day × ${S.qd} day(s). A projection from the supplied accrual rate, not guaranteed rewards. No monetary value is assigned to Quanta.`);
+ const qd=[];for(let d=0;d<=90;d+=7.5)qd.push(d);c2.data={labels:qd.map(Math.round),datasets:[{data:qd.map(d=>Math.round(quanta(r.borrowed,d))),borderColor:"#f5c26b",pointRadius:0}]};c2.update();
+ const k=cost(r.borrowed,S.apr,S.days);set("k-f",usd(k.f));set("k-w",usd(k.w));set("k-t",usd(k.t));set("k-s",usd(k.sav));$("k-s").style.color=k.sav>=0?HC.SAFE:HC.DANGER;
+ c3.data={labels:["Ducat (one-time fee)","Wrapped "+S.apr+"% APR"],datasets:[{data:[k.t,k.w],backgroundColor:["#f7931a","#64748b"]}]};c3.update();
+}
+const EDU=[["BTC-backed borrowing","Lock BTC as collateral and borrow against it without selling."],["UNIT","The unit you borrow. Simulated here as 1 UNIT = 1 USD."],["Collateralization","Collateral value ÷ debt. 200% means $2 locked per $1 borrowed."],["160% opening ratio","The minimum buffer required when opening a vault."],["135% liquidation threshold","If the ratio falls to this level, the vault can be liquidated."],["Volatility risk","A BTC price drop lowers your ratio even if you do nothing."],["Quanta accrual","100 Quanta per UNIT per day (supplied rate), a projection only."],["0% interest ≠ free","No ongoing interest, but a 1% one-time fee and liquidation risk remain."]];
+$("edu").innerHTML=EDU.map(([t,d])=>`<div class="st"><b style="font-size:15px;color:#f5c26b">${t}</b><p class="mut" style="font-size:13px;margin:6px 0 0">${d}</p></div>`).join("");
+/* ===== Position card ===== */
+function summary(){const r=R;return `Simulated Ducat vault: ${fmt(S.btc,4)} BTC collateral, ${fmt(r.borrowed,2)} UNIT borrowed, ${fmt(r.ratio*100,1)}% ratio, liquidation ~${usd(r.liq)}, ~${fmt(r.dq)} Quanta/day (projection). Status: ${r.h}. Simulated, not financial advice.`}
+function openCard(){const r=R,c=$("card"),x=c.getContext("2d");const g=x.createLinearGradient(0,0,1200,630);g.addColorStop(0,"#0b1220");g.addColorStop(1,"#1a2236");x.fillStyle=g;x.fillRect(0,0,1200,630);
+ x.fillStyle="rgba(247,147,26,.12)";x.beginPath();x.arc(1100,40,320,0,7);x.fill();
+ x.fillStyle="#f7931a";x.font="bold 40px sans-serif";x.fillText("DUCAT",60,90);x.fillStyle="#94a3b8";x.font="24px sans-serif";x.fillText("Vault Risk & Quanta Simulator",190,90);
+ [["BTC Collateral",fmt(S.btc,4)+" BTC"],["Borrowed UNIT",fmt(r.borrowed,2)],["Collateral Ratio",fmt(r.ratio*100,1)+"%"],["Liquidation Price",usd(r.liq)],["Daily Quanta (projection)",fmt(r.dq)]].forEach(([k,v],i)=>{const y=180+i*68;x.fillStyle="#94a3b8";x.font="26px sans-serif";x.fillText(k,60,y);x.fillStyle="#fff";x.font="bold 36px sans-serif";x.fillText(v,480,y)});
+ x.fillStyle="#f7931a";x.fillRect(0,0,1200,8);x.fillStyle=HC[r.h]+"33";x.beginPath();x.roundRect(60,505,240,70,35);x.fill();x.fillStyle=HC[r.h];x.font="bold 36px sans-serif";x.fillText(r.h,96,554);x.fillStyle="#64748b";x.font="18px sans-serif";x.fillText("Simulated estimates. Not financial advice. Final terms set by the Ducat protocol.",60,604);
+ $("xs").href="https://twitter.com/intent/tweet?text="+encodeURIComponent(summary()+" #Ducat #Bitcoin");$("modal").classList.add("open")}
+const closeCard=()=>$("modal").classList.remove("open");
+function dl(){const a=document.createElement("a");a.download="ducat-position-card.png";a.href=$("card").toDataURL("image/png");a.click()}
+async function cpy(){try{await navigator.clipboard.writeText(summary());set("cp","Copied")}catch(e){set("cp","Copy failed")}setTimeout(()=>set("cp","Copy summary"),1500)}
+["btc","price"].forEach(id=>$(id).addEventListener("input",e=>{const v=parseFloat(e.target.value);set("err",e.target.value!==""&&!(v>=0)?"Enter a positive number. Invalid values are treated as 0.":"")}));
+function save(){const q=new URLSearchParams({b:S.btc,p:S.price,r:S.ratio,s:S.stress,f:S.fee});try{history.replaceState(null,"","?"+q+location.hash)}catch(e){}}
+function load(){const q=new URLSearchParams(location.search),g=k=>parseFloat(q.get(k));
+ if(g("b")>=0)S.btc=g("b");if(g("p")>=0)S.price=g("p");if(g("r")>=160&&g("r")<=500)S.ratio=g("r");if(g("s")>=-60&&g("s")<=60)S.stress=g("s");if(["deducted","added"].includes(q.get("f")))S.fee=q.get("f")}
+async function copyLink(){try{await navigator.clipboard.writeText(location.href);set("cl","Copied")}catch(e){set("cl","Copy failed")}setTimeout(()=>set("cl","🔗 Copy link"),1500)}
+const PS=[["Coinbase","https://api.coinbase.com/v2/prices/BTC-USD/spot",j=>j.data.amount],["Kraken","https://api.kraken.com/0/public/Ticker?pair=XBTUSD",j=>Object.values(j.result)[0].c[0]],["mempool.space","https://mempool.space/api/v1/prices",j=>j.USD],["Binance","https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT",j=>j.price],["CoinGecko","https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",j=>j.bitcoin.usd]];
+const fetchPrice=()=>Promise.any(PS.map(async([n,u,f])=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),6000);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw 0;const p=parseFloat(f(await r.json()));if(!(p>0))throw 0;return{p,n}}finally{clearTimeout(t)}}));
+async function livePrice(){const b=$("live");b.disabled=true;set("lstat","Fetching live price…");
+ try{const{p,n}=await fetchPrice();S.price=Math.round(p);sync();update();set("lstat",`Live BTC price ${usd(p)} via ${n}, ${new Date().toLocaleTimeString()}`)}
+ catch(e){set("lstat","Live price unavailable. Enter it manually.")}b.disabled=false}
+/* ===== Wallet (read-only) ===== */
+let WB=0;const ADDR=/(bc1[a-z0-9]{20,90}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})/,findAddr=o=>{const m=JSON.stringify(o).match(ADDR);return m&&m[0]};
+const W={Xverse:{ok:()=>!!(window.XverseProviders&&window.XverseProviders.BitcoinProvider),go:async()=>{const p=window.XverseProviders.BitcoinProvider;let r=await p.request("getAccounts",{purposes:["payment"],message:"Connect to view your BTC balance"});if(r&&r.error)r=await p.request("wallet_connect",null);if(r&&r.error)throw 0;return findAddr(r)}},
+ Unisat:{ok:()=>!!window.unisat,go:async()=>(await window.unisat.requestAccounts())[0]},
+ Leather:{ok:()=>!!window.LeatherProvider,go:async()=>findAddr(await window.LeatherProvider.request("getAddresses"))},
+ OKX:{ok:()=>!!(window.okxwallet&&window.okxwallet.bitcoin),go:async()=>(await window.okxwallet.bitcoin.connect()).address}};
+function walletOpen(){if(S.addr){S.addr=null;WB=0;set("wbtn","Connect wallet");set("wa","Not connected");set("wbal","");$("useb").style.display="none";return}
+ $("wl").innerHTML="";Object.keys(W).forEach(n=>{const b=document.createElement("button");b.className="btn";const ok=W[n].ok();b.textContent=n+(ok?"  ·  detected":"  ·  not installed");b.onclick=()=>connectW(n);$("wl").appendChild(b)});$("wm").classList.add("open")}
+async function connectW(n){if(!W[n].ok()){set("err",n+" wallet not found. Install the extension or open this site in its in-app browser.");$("wm").classList.remove("open");return}
+ try{const a=await W[n].go();if(!a)throw 0;S.addr=a;$("wm").classList.remove("open");set("err","");set("wbtn",a.slice(0,6)+"…"+a.slice(-4)+" ✕");set("wa",a);bal(a)}catch(e){set("err","Wallet connection was cancelled or failed.");$("wm").classList.remove("open")}}
+async function bal(a){set("wbal","Loading balance…");try{const r=await fetch("https://mempool.space/api/address/"+a);if(!r.ok)throw 0;const j=await r.json(),c=j.chain_stats,m=j.mempool_stats;WB=(c.funded_txo_sum-c.spent_txo_sum+m.funded_txo_sum-m.spent_txo_sum)/1e8;set("wbal","On-chain balance of this address: "+fmt(WB,8)+" BTC");$("useb").style.display=WB>0?"inline-block":"none"}catch(e){set("wbal","Balance unavailable right now.")}}
+function useBal(){S.btc=+WB.toFixed(8);sync();update()}
+load();sync();update();$("go").href=CONFIG.appUrl;if(!new URLSearchParams(location.search).get("p"))livePrice();
+</script></body></html>
